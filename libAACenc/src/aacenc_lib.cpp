@@ -166,6 +166,8 @@ typedef struct {
 
     UCHAR             userSbrEnabled;
 
+    INT               userBitreservoir;
+
 } USER_PARAM;
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -415,18 +417,19 @@ AAC_ENCODER_ERROR aacEncDefaultConfig(HANDLE_AACENC_CONFIG hAacConfig,
     FDKmemclear(config, sizeof(USER_PARAM));
 
     /* copy encoder configuration settings */
-    config->nChannels       = hAacConfig->nChannels;
-    config->userAOT = hAacConfig->audioObjectType = AOT_AAC_LC;
-    config->userSamplerate  = hAacConfig->sampleRate;
-    config->userChannelMode = hAacConfig->channelMode;
-    config->userBitrate     = hAacConfig->bitRate;
-    config->userBitrateMode = hAacConfig->bitrateMode;
-    config->userBandwidth   = hAacConfig->bandWidth;
-    config->userTns         = hAacConfig->useTns;
-    config->userPns         = hAacConfig->usePns;
-    config->userIntensity   = hAacConfig->useIS;
-    config->userAfterburner = hAacConfig->useRequant;
-    config->userFramelength = (UINT)-1;
+    config->nChannels        = hAacConfig->nChannels;
+    config->userAOT          = hAacConfig->audioObjectType = AOT_AAC_LC;
+    config->userSamplerate   = hAacConfig->sampleRate;
+    config->userChannelMode  = hAacConfig->channelMode;
+    config->userBitrate      = hAacConfig->bitRate;
+    config->userBitrateMode  = hAacConfig->bitrateMode;
+    config->userBitreservoir = -1;
+    config->userBandwidth    = hAacConfig->bandWidth;
+    config->userTns          = hAacConfig->useTns;
+    config->userPns          = hAacConfig->usePns;
+    config->userIntensity    = hAacConfig->useIS;
+    config->userAfterburner  = hAacConfig->useRequant;
+    config->userFramelength  = (UINT)-1;
 
     if (hAacConfig->syntaxFlags & AC_ER_VCB11) {
       config->userErTools  |= 0x01;
@@ -695,7 +698,7 @@ AACENC_ERROR FDKaacEnc_AdjustEncSettings(HANDLE_AACENCODER hAacEncoder,
         if (config->userBitrateMode==8) {
           hAacConfig->bitrateMode = 0;
         }
-        if (config->userBitrateMode==0) {
+        if (config->userBitrateMode==0 && config->userBitreservoir == -1) {
           hAacConfig->bitreservoir = 50*config->nChannels; /* default, reduced bitreservoir */
         }
         if (hAacConfig->bitrateMode!=0) {
@@ -704,6 +707,10 @@ AACENC_ERROR FDKaacEnc_AdjustEncSettings(HANDLE_AACENCODER hAacEncoder,
         break;
       default:
         break;
+    }
+
+    if (config->userBitreservoir != -1) {
+        hAacConfig->bitreservoir = config->userBitreservoir;
     }
 
     if (hAacConfig->epConfig >= 0) {
@@ -1777,6 +1784,12 @@ AACENC_ERROR aacEncoder_SetParam(
             hAacEncoder->InitFlags |= AACENC_INIT_CONFIG;
         }
         break;
+    case AACENC_BITRESERVOIR:
+        if (settings->userBitreservoir != value) {
+            settings->userBitreservoir = value;
+            hAacEncoder->InitFlags |= AACENC_INIT_CONFIG | AACENC_INIT_STATES | AACENC_INIT_TRANSPORT;
+        }
+        break;
     default:
       err = AACENC_UNSUPPORTED_PARAMETER;
       break;
@@ -1855,6 +1868,9 @@ UINT aacEncoder_GetParam(
         break;
     case AACENC_METADATA_MODE:
         value = (hAacEncoder->metaDataAllowed==0) ? 0 : (UINT)settings->userMetaDataMode;
+        break;
+    case AACENC_BITRESERVOIR:
+        value = (UINT)settings->userBitreservoir;
         break;
     default:
       //err = MPS_INVALID_PARAMETER;

@@ -875,6 +875,10 @@ typedef enum
                                                   - 0: MPEG channel ordering (e. g. 5.1: C, L, R, SL, SR, LFE). (default)
                                                   - 1: WAVE file format channel ordering (e. g. 5.1: L, R, C, LFE, SL, SR). */
 
+  AACENC_BITRESERVOIR             = 0x0108,  /*!< Override bit reservoir size:
+                                                  - -1: Default configuration.
+                                                  - 0: Disable bit reservoir technique. */
+
   AACENC_AFTERBURNER              = 0x0200,  /*!< This parameter controls the use of the afterburner feature.
                                                   The afterburner is a type of analysis by synthesis algorithm which increases the
                                                   audio quality but also the required processing power. It is recommended to always
